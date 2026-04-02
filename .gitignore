@@ -1,1 +1,5 @@
 claude-code/
+node_modules/
+package-lock.json
+.env
+.dev.vars
