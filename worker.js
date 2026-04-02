@@ -1166,7 +1166,7 @@ export default {
     if (utcHour === 8) {
       try {
         // 1️⃣ 生成優惠建議
-        if (flags.AI_AUTO_REPLY) {
+        if (flags.AI_AUTO_REPLY && env.TOAPIS_KEY) {
           const suggestionPrompt = `你是 GHS 蓋厚勝娛樂城的營運助手。
 基於現在的遊戲熱度和用戶習慣，生成 3 個今日最佳優惠建議。
 格式：
@@ -1175,13 +1175,15 @@ export default {
 目標客群
 預期效果`;
 
-          const suggestion = await callLLM(env, [
-            { role: 'user', content: suggestionPrompt }
-          ]);
+          const suggestionText = await callUpstreamLLM(
+            env,
+            '你是優惠建議專家，簡潔有力。',
+            suggestionPrompt
+          );
 
           const sugData = {
             date: todayStr,
-            content: suggestion.text,
+            content: suggestionText,
             generated_at: now.toISOString(),
             status: 'active'
           };
@@ -1194,16 +1196,35 @@ export default {
           );
 
           // 存 D1 (歷史記錄)
-          await env.DB.prepare(
-            `INSERT INTO suggestions (id, date, content, generated_at, status)
-             VALUES (?1, ?2, ?3, ?4, ?5)`
-          ).bind(
-            `sug-${todayStr}-${Math.random().toString(36).substring(7)}`,
-            todayStr,
-            suggestion.text,
-            now.toISOString(),
-            'active'
-          ).run();
+          try {
+            await env.DB.prepare(
+              `INSERT INTO suggestions (id, date, content, generated_at, status)
+               VALUES (?1, ?2, ?3, ?4, ?5)`
+            ).bind(
+              `sug-${todayStr}-${Math.random().toString(36).substring(7)}`,
+              todayStr,
+              suggestionText,
+              now.toISOString(),
+              'active'
+            ).run();
+          } catch (dbErr) {
+            // D1 table 可能不存在，忽略
+            console.log('[Cron] D1 insert skipped:', dbErr.message);
+          }
+
+          // 推播通知
+          if (env.TG_TOKEN) {
+            const msg = `🎯 *今日優惠建議* (${todayStr})\n\n${suggestionText.substring(0, 200)}...`;
+            await fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: env.TG_ADMIN_CHAT || '-5133663833',
+                text: msg,
+                parse_mode: 'Markdown'
+              })
+            }).catch(() => {});
+          }
         }
 
         // 2️⃣ 拉取開發狀況 (如果有 GitHub Token)
@@ -1230,20 +1251,6 @@ export default {
               })
             }).catch(() => {});
           }
-        }
-
-        // 3️⃣ 推播優惠建議給用戶
-        if (env.TG_TOKEN) {
-          const msg = `🎯 *今日優惠建議* (${todayStr})\n\n${suggestion.text.substring(0, 200)}...`;
-          await fetch(`https://api.telegram.org/bot${env.TG_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: env.TG_ADMIN_CHAT || '-5133663833',
-              text: msg,
-              parse_mode: 'Markdown'
-            })
-          }).catch(() => {});
         }
       } catch (err) {
         console.error('[Cron 08:00] Error:', err.message);
