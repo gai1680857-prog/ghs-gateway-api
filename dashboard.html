@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GHS Gateway V2 — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#08080A;--bg2:rgba(17,24,39,0.7);--orange:#FF6B35;--teal:#00D4AA;--text:#E8E8EC;--dim:#8B8B9E;--border:rgba(255,107,53,0.15);--red:#EF4444;--green:#22C55E;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;min-height:100vh;}
+.top-bar{background:rgba(0,0,0,0.6);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;backdrop-filter:blur(20px);}
+.top-bar h1{font-family:'Orbitron',sans-serif;font-size:16px;background:linear-gradient(135deg,var(--orange),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.top-bar .ver{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dim);}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+.container{max-width:1200px;margin:0 auto;padding:24px 16px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-bottom:24px;}
+.card{background:var(--bg2);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:14px;padding:24px;transition:transform 0.2s;}
+.card:hover{transform:translateY(-2px);}
+.card h2{font-family:'Orbitron',sans-serif;font-size:13px;color:var(--orange);margin-bottom:16px;letter-spacing:1px;}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.stat-row:last-child{border:none;}
+.stat-label{font-size:14px;color:var(--dim);}
+.stat-value{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--text);}
+.badge{padding:3px 10px;border-radius:6px;font-size:12px;font-family:'JetBrains Mono',monospace;}
+.badge-green{background:rgba(34,197,94,0.15);color:var(--green);}
+.badge-red{background:rgba(239,68,68,0.15);color:var(--red);}
+.badge-orange{background:rgba(255,107,53,0.15);color:var(--orange);}
+.badge-teal{background:rgba(0,212,170,0.15);color:var(--teal);}
+.btn{padding:8px 16px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text);cursor:pointer;font-size:13px;transition:all 0.2s;font-family:'Noto Sans TC',sans-serif;}
+.btn:hover{background:rgba(255,107,53,0.1);border-color:var(--orange);}
+.btn-primary{background:linear-gradient(135deg,var(--orange),#FF8C5A);border:none;color:#fff;font-weight:500;}
+.btn-primary:hover{opacity:0.9;}
+.btn-sm{padding:4px 10px;font-size:12px;}
+input,textarea,select{background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:14px;width:100%;font-family:'Noto Sans TC',sans-serif;}
+input:focus,textarea:focus{outline:none;border-color:var(--orange);}
+textarea{resize:vertical;min-height:80px;}
+.flag-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.flag-name{font-family:'JetBrains Mono',monospace;font-size:13px;}
+.toggle{position:relative;width:44px;height:24px;cursor:pointer;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle .slider{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.1);border-radius:12px;transition:0.3s;}
+.toggle .slider:before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:0.3s;}
+.toggle input:checked+.slider{background:var(--teal);}
+.toggle input:checked+.slider:before{transform:translateX(20px);}
+.log-item{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.03);font-size:13px;display:flex;gap:12px;align-items:flex-start;}
+.log-time{font-family:'JetBrains Mono',monospace;color:var(--dim);font-size:11px;min-width:80px;}
+.log-event{font-family:'JetBrains Mono',monospace;font-size:12px;}
+.log-list{max-height:400px;overflow-y:auto;}
+.chat-box{display:flex;gap:8px;margin-bottom:16px;}
+.chat-box input{flex:1;}
+.chat-history{max-height:350px;overflow-y:auto;margin-bottom:16px;}
+.chat-msg{padding:12px;margin-bottom:8px;border-radius:10px;font-size:14px;line-height:1.7;}
+.chat-user{background:rgba(255,107,53,0.08);border:1px solid rgba(255,107,53,0.15);margin-left:40px;}
+.chat-ai{background:rgba(0,212,170,0.05);border:1px solid rgba(0,212,170,0.1);margin-right:40px;}
+.chat-tools{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);margin-top:6px;}
+.tab-bar{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap;}
+.tab{padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--dim);transition:all 0.2s;border:1px solid transparent;}
+.tab.active{color:var(--orange);background:rgba(255,107,53,0.08);border-color:var(--border);}
+.tab:hover{color:var(--text);}
+.section{display:none;}
+.section.active{display:block;}
+.full-width{grid-column:1/-1;}
+.memory-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.memory-id{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--teal);}
+.memory-summary{font-size:13px;color:var(--dim);flex:1;margin:0 16px;}
+@media(max-width:768px){.grid{grid-template-columns:1fr;}.chat-user,.chat-ai{margin:0;}}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div>
+    <h1>GHS GATEWAY V2</h1>
+    <span class="ver">Claude Code Architecture Edition</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span class="status-dot"></span>
+    <span id="healthStatus" style="font-size:13px;color:var(--dim);">Checking...</span>
+  </div>
+</div>
+
+<div class="container">
+
+<div class="tab-bar">
+  <div class="tab active" data-tab="overview">Overview</div>
+  <div class="tab" data-tab="chat">AI Chat</div>
+  <div class="tab" data-tab="suggestions">Today's Tips</div>
+  <div class="tab" data-tab="dev-status">Dev Status</div>
+  <div class="tab" data-tab="flags">Feature Flags</div>
+  <div class="tab" data-tab="memory">Memory</div>
+  <div class="tab" data-tab="logs">Logs</div>
+  <div class="tab" data-tab="tools">Tools</div>
+</div>
+
+<!-- Overview -->
+<div class="section active" id="tab-overview">
+  <div class="grid">
+    <div class="card">
+      <h2>SYSTEM STATUS</h2>
+      <div id="systemInfo">載入中...</div>
+    </div>
+    <div class="card">
+      <h2>QUICK STATS</h2>
+      <div class="stat-row"><span class="stat-label">工具數量</span><span class="stat-value" id="toolCount">-</span></div>
+      <div class="stat-row"><span class="stat-label">記憶索引</span><span class="stat-value" id="memoryCount">-</span></div>
+      <div class="stat-row"><span class="stat-label">日誌數量</span><span class="stat-value" id="logCount">-</span></div>
+      <div class="stat-row"><span class="stat-label">啟用 Flags</span><span class="stat-value" id="flagCount">-</span></div>
+    </div>
+    <div class="card">
+      <h2>ENDPOINTS</h2>
+      <div class="stat-row"><span class="stat-label">POST /v1/chat</span><span class="badge badge-green">Active</span></div>
+      <div class="stat-row"><span class="stat-label">POST /v1/generate</span><span class="badge badge-green">Active</span></div>
+      <div class="stat-row"><span class="stat-label">POST /webhook/line</span><span class="badge badge-teal">LINE AI</span></div>
+      <div class="stat-row"><span class="stat-label">POST /webhook/:src</span><span class="badge badge-green">Active</span></div>
+      <div class="stat-row"><span class="stat-label">Cron Dream Mode</span><span class="badge badge-orange">Standby</span></div>
+    </div>
+    <div class="card">
+      <h2>ARCHITECTURE</h2>
+      <div class="stat-row"><span class="stat-label">Tool-as-Module</span><span class="badge badge-teal">Active</span></div>
+      <div class="stat-row"><span class="stat-label">Agent Loop</span><span class="badge badge-teal">Active</span></div>
+      <div class="stat-row"><span class="stat-label">Memory Index</span><span class="badge badge-teal">Active</span></div>
+      <div class="stat-row"><span class="stat-label">Feature Flags</span><span class="badge badge-teal">Active</span></div>
+      <div class="stat-row"><span class="stat-label">Pre/Post Hooks</span><span class="badge badge-teal">Active</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>RECENT LOGS</h2>
+    <div id="recentLogs" class="log-list">載入中...</div>
+  </div>
+</div>
+
+<!-- AI Chat -->
+<div class="section" id="tab-chat">
+  <div class="card">
+    <h2>AI AGENT CHAT</h2>
+    <p style="font-size:13px;color:var(--dim);margin-bottom:16px;">測試 Agent Loop — AI 會自動呼叫工具回答問題</p>
+    <div class="chat-history" id="chatHistory"></div>
+    <div class="chat-box">
+      <input type="text" id="chatInput" placeholder="輸入問題..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="btn btn-primary" onclick="sendChat()">發送</button>
+    </div>
+  </div>
+</div>
+
+<!-- Feature Flags -->
+<div class="section" id="tab-flags">
+  <div class="card">
+    <h2>FEATURE FLAGS</h2>
+    <p style="font-size:13px;color:var(--dim);margin-bottom:16px;">即時開關功能，不需要重新部署</p>
+    <div id="flagList">載入中...</div>
+    <div style="margin-top:16px;text-align:right;">
+      <button class="btn btn-primary" onclick="saveFlags()">儲存變更</button>
+    </div>
+  </div>
+</div>
+
+<!-- Memory -->
+<div class="section" id="tab-memory">
+  <div class="grid">
+    <div class="card full-width">
+      <h2>MEMORY INDEX (Layer 1)</h2>
+      <p style="font-size:13px;color:var(--dim);margin-bottom:16px;">永遠載入 Context 的輕量索引</p>
+      <div id="memoryList">載入中...</div>
+    </div>
+    <div class="card full-width">
+      <h2>UPDATE TOPIC (Layer 2)</h2>
+      <div style="display:grid;gap:12px;">
+        <input type="text" id="topicId" placeholder="Topic ID (例: faq-deposit)">
+        <input type="text" id="topicSummary" placeholder="摘要 (max 150 字)">
+        <textarea id="topicContent" placeholder="完整內容..."></textarea>
+        <button class="btn btn-primary" onclick="updateTopic()">更新 Topic</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Logs -->
+<div class="section" id="tab-logs">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h2>AUDIT LOGS</h2>
+      <button class="btn btn-sm" onclick="loadLogs()">Refresh</button>
+    </div>
+    <div id="fullLogs" class="log-list">載入中...</div>
+  </div>
+</div>
+
+<!-- Tools -->
+<div class="section" id="tab-tools">
+  <div class="card">
+    <h2>REGISTERED TOOLS</h2>
+    <div id="toolList">載入中...</div>
+  </div>
+</div>
+
+<!-- Today's Suggestions -->
+<div class="section" id="tab-suggestions">
+  <div class="card">
+    <h2>TODAY'S TIPS</h2>
+    <div id="todaySuggestion" style="line-height:1.8;color:var(--text);white-space:pre-wrap;">載入中...</div>
+  </div>
+  <div class="card">
+    <h2>HISTORY</h2>
+    <div id="suggestionHistory" style="max-height:400px;overflow-y:auto;">載入中...</div>
+  </div>
+</div>
+
+<!-- Dev Status -->
+<div class="section" id="tab-dev-status">
+  <div class="card">
+    <h2>TODAY'S COMMITS</h2>
+    <div class="stat-row"><span class="stat-label">Date</span><span class="stat-value" id="devDate">-</span></div>
+    <div class="stat-row"><span class="stat-label">Commits</span><span class="stat-value" id="devCommits">-</span></div>
+    <div class="stat-row"><span class="stat-label">Files Changed</span><span class="stat-value" id="devFiles">-</span></div>
+    <div style="margin-top:16px;padding:12px;background:rgba(255,107,53,0.08);border-radius:8px;border:1px solid var(--border);">
+      <div id="devSummary" style="font-size:13px;line-height:1.6;color:var(--text);">無 commits</div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>7-DAY HISTORY</h2>
+    <div id="devHistory" style="max-height:400px;overflow-y:auto;">載入中...</div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const API = 'https://ghs-gateway-v2.gai1680857.workers.dev';
+let AUTH = '';
+let currentFlags = {};
+
+// Auth prompt
+(function init() {
+  AUTH = localStorage.getItem('ghs-admin-key') || '';
+  if (!AUTH) {
+    AUTH = prompt('輸入 Admin Key:');
+    if (AUTH) localStorage.setItem('ghs-admin-key', AUTH);
+  }
+  if (AUTH) loadAll();
+})();
+
+function headers() {
+  return { 'Authorization': `Bearer ${AUTH}`, 'Content-Type': 'application/json' };
+}
+
+async function api(path, method = 'GET', body = null) {
+  const opts = { method, headers: headers() };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  return r.json();
+}
+
+async function loadAll() {
+  loadHealth(); loadTools(); loadFlags(); loadMemory(); loadLogs(); loadSuggestions(); loadDevStatus();
+}
+
+async function loadHealth() {
+  try {
+    const d = await api('/api/health');
+    document.getElementById('healthStatus').textContent = `v${d.version?.replace('v','')} Online`;
+    document.getElementById('healthStatus').style.color = '#22C55E';
+    document.getElementById('systemInfo').innerHTML = `
+      <div class="stat-row"><span class="stat-label">Version</span><span class="stat-value">${d.version}</span></div>
+      <div class="stat-row"><span class="stat-label">Architecture</span><span class="stat-value">${d.arch}</span></div>
+      <div class="stat-row"><span class="stat-label">Patterns</span><span class="stat-value">${d.patterns?.length || 0}</span></div>
+      <div class="stat-row"><span class="stat-label">Server Time</span><span class="stat-value">${new Date(d.time).toLocaleString('zh-TW')}</span></div>
+    `;
+  } catch { document.getElementById('healthStatus').textContent = 'Offline'; }
+}
+
+async function loadTools() {
+  const d = await api('/api/tools');
+  document.getElementById('toolCount').textContent = d.tools?.length || 0;
+  const riskColors = { low: 'teal', medium: 'orange', high: 'red' };
+  document.getElementById('toolList').innerHTML = (d.tools || []).map(t => `
+    <div class="stat-row">
+      <div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:13px;">${t.name}</span>
+        <span style="font-size:12px;color:var(--dim);margin-left:8px;">${t.description}</span>
+      </div>
+      <span class="badge badge-${riskColors[t.risk]}">${t.risk}</span>
+    </div>
+  `).join('');
+}
+
+async function loadFlags() {
+  const d = await api('/api/flags');
+  currentFlags = d.flags || {};
+  const active = Object.values(currentFlags).filter(v => v).length;
+  document.getElementById('flagCount').textContent = `${active}/${Object.keys(currentFlags).length}`;
+  document.getElementById('flagList').innerHTML = Object.entries(currentFlags).map(([k, v]) => `
+    <div class="flag-row">
+      <span class="flag-name">${k}</span>
+      <label class="toggle"><input type="checkbox" data-flag="${k}" ${v ? 'checked' : ''}><span class="slider"></span></label>
+    </div>
+  `).join('');
+}
+
+async function saveFlags() {
+  const updates = {};
+  document.querySelectorAll('[data-flag]').forEach(el => {
+    updates[el.dataset.flag] = el.checked;
+  });
+  await api('/api/flags', 'POST', updates);
+  loadFlags();
+  alert('Flags 已更新');
+}
+
+async function loadMemory() {
+  const d = await api('/api/memory');
+  const idx = d.index || [];
+  document.getElementById('memoryCount').textContent = idx.length;
+  document.getElementById('memoryList').innerHTML = idx.map(m => `
+    <div class="memory-item">
+      <span class="memory-id">${m.id}</span>
+      <span class="memory-summary">${m.summary}</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);">${m.updated}</span>
+    </div>
+  `).join('') || '<span style="color:var(--dim);">No memory entries</span>';
+}
+
+async function updateTopic() {
+  const id = document.getElementById('topicId').value;
+  const summary = document.getElementById('topicSummary').value;
+  const content = document.getElementById('topicContent').value;
+  if (!id || !content) return alert('請填入 Topic ID 和內容');
+  await api('/api/memory', 'POST', { action: 'update-topic', topicId: id, summary, content });
+  alert('Topic 已更新');
+  loadMemory();
+  document.getElementById('topicId').value = '';
+  document.getElementById('topicSummary').value = '';
+  document.getElementById('topicContent').value = '';
+}
+
+async function loadLogs() {
+  const d = await api('/api/logs?limit=50');
+  document.getElementById('logCount').textContent = d.count || 0;
+  const html = (d.logs || []).map(renderLog).join('');
+  document.getElementById('fullLogs').innerHTML = html || '<span style="color:var(--dim);">No logs</span>';
+  document.getElementById('recentLogs').innerHTML = (d.logs || []).slice(0, 10).map(renderLog).join('') || '<span style="color:var(--dim);">No logs</span>';
+}
+
+function renderLog(l) {
+  const colors = { pre_tool: 'var(--dim)', post_tool: 'var(--teal)', tool_error: 'var(--red)', webhook: 'var(--orange)', line_reply: '#3B82F6', line_error: 'var(--red)' };
+  const time = l.time ? new Date(l.time).toLocaleTimeString('zh-TW') : '';
+  return `<div class="log-item">
+    <span class="log-time">${time}</span>
+    <span class="log-event" style="color:${colors[l.event]||'var(--dim)'}">${l.event}</span>
+    <span style="font-size:12px;color:var(--dim);">${l.tool||l.source||''} ${l.success===false?'❌':l.success===true?'✅':''}</span>
+  </div>`;
+}
+
+async function loadSuggestions() {
+  try {
+    const today = await api('/api/suggestions/today');
+    if (today.content) {
+      document.getElementById('todaySuggestion').textContent = today.content;
+    } else {
+      document.getElementById('todaySuggestion').textContent = '今日建議尚未生成\n\n每天 UTC 08:00 (台灣 16:00) 自動更新';
+    }
+    
+    const hist = await api('/api/suggestions/history?limit=7');
+    const histHtml = (hist.suggestions || []).map(s => `
+      <div style="padding:10px;border-bottom:1px solid var(--border);">
+        <div style="font-size:12px;color:var(--dim);">${s.date}</div>
+        <div style="font-size:12px;line-height:1.4;margin-top:4px;">${s.content.substring(0, 100)}...</div>
+      </div>
+    `).join('');
+    document.getElementById('suggestionHistory').innerHTML = histHtml || '<div style="padding:10px;color:var(--dim);">無歷史記錄</div>';
+  } catch(e) {
+    document.getElementById('todaySuggestion').textContent = `Error: ${e.message}`;
+  }
+}
+
+async function loadDevStatus() {
+  try {
+    const today = await api('/api/dev-status/today');
+    document.getElementById('devDate').textContent = today.date;
+    document.getElementById('devCommits').textContent = today.commit_count || 0;
+    document.getElementById('devFiles').textContent = today.files_changed || 0;
+    document.getElementById('devSummary').textContent = today.summary || '無 commits';
+    
+    const hist = await api('/api/dev-status/history?limit=7');
+    const histHtml = (hist.statuses || []).map(s => `
+      <div style="padding:10px;border-bottom:1px solid var(--border);">
+        <div style="font-size:12px;color:var(--dim);">${s.date}</div>
+        <div style="font-size:12px;color:var(--teal);margin-top:4px;">💻 ${s.commit_count} commits, 📝 ${s.files_changed} files</div>
+        <div style="font-size:11px;color:var(--text1);margin-top:4px;">${s.summary.split('\n').slice(0,2).join(' ')}</div>
+      </div>
+    `).join('');
+    document.getElementById('devHistory').innerHTML = histHtml || '<div style="padding:10px;color:var(--dim);">無歷史記錄</div>';
+  } catch(e) {
+    document.getElementById('devSummary').textContent = `Error: ${e.message}`;
+  }
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  const history = document.getElementById('chatHistory');
+  history.innerHTML += `<div class="chat-msg chat-user">${escHtml(msg)}</div>`;
+  history.innerHTML += `<div class="chat-msg chat-ai" id="thinking" style="color:var(--dim);">Thinking...</div>`;
+  history.scrollTop = history.scrollHeight;
+
+  try {
+    const d = await api('/v1/chat', 'POST', { message: msg });
+    document.getElementById('thinking').remove();
+    const tools = d.tools_used?.length ? `<div class="chat-tools">Tools: ${d.tools_used.join(', ')}</div>` : '';
+    history.innerHTML += `<div class="chat-msg chat-ai">${escHtml(d.reply)}${tools}</div>`;
+  } catch (e) {
+    document.getElementById('thinking').remove();
+    history.innerHTML += `<div class="chat-msg chat-ai" style="color:var(--red);">Error: ${e.message}</div>`;
+  }
+  history.scrollTop = history.scrollHeight;
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

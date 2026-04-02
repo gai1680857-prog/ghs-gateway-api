@@ -1,0 +1,37 @@
+name = "ghs-gateway-v2"
+main = "worker.js"
+compatibility_date = "2024-12-01"
+
+# ── KV Namespace Bindings ──
+# 建好後填入真實 ID
+[[kv_namespaces]]
+binding = "KV"
+id = "7a8eed57979e4853a6d9b2abf92f4ed9"
+
+# ── D1 Database Binding ──
+# 沿用現有 ghs-ops-db 或建新的
+[[d1_databases]]
+binding = "DB"
+database_name = "ghs-ops-db"
+database_id = "1340f1e6-a767-4ceb-aec4-507bdb04ceac"
+
+# ── Cron Triggers ──
+# 每天 UTC 08:00 (台灣 16:00) 自動生成優惠建議 + 開發狀況
+# 每天 UTC 17:00 (台灣 01:00) 背景記憶整合
+[triggers]
+crons = ["0 8 * * *", "0 17 * * *"]
+
+# ── Environment Variables (非敏感) ──
+[vars]
+AI_MODEL = "claude-haiku-4-5"
+
+# ── Secrets (用 wrangler secret put 設定) ──
+# wrangler secret put TOAPIS_KEY
+# wrangler secret put ADMIN_KEY
+# wrangler secret put TG_TOKEN
+# wrangler secret put WEBHOOK_SECRET
+# wrangler secret put TG_ADMIN_CHAT
+# wrangler secret put LINE_CHANNEL_TOKEN
+# wrangler secret put GITHUB_TOKEN
+# wrangler secret put VAPID_PRIVATE_KEY
+# wrangler secret put VAPID_PUBLIC_KEY

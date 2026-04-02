@@ -1,0 +1,11 @@
+{
+	"servers": {
+		"sunriseapps/imagesorcery-mcp": {
+			"type": "stdio",
+			"command": "other",
+			"gallery": "https://api.mcp.github.com",
+			"version": "1.0.0"
+		}
+	},
+	"inputs": []
+}
