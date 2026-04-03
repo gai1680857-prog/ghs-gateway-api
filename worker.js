@@ -1186,6 +1186,23 @@ export default {
       }
     }
 
+    // ──── Overlay 人數查詢 ────
+    if (path === '/viewers' && request.method === 'GET') {
+      const channel = url.searchParams.get('channel') || '';
+      let twitch = 0;
+      try {
+        if (channel && env.TWITCH_CLIENT_ID && env.TWITCH_TOKEN) {
+          const r = await fetch(
+            `https://api.twitch.tv/helix/streams?user_login=${encodeURIComponent(channel)}`,
+            { headers: { 'Client-ID': env.TWITCH_CLIENT_ID, 'Authorization': `Bearer ${env.TWITCH_TOKEN}` } }
+          );
+          const d = await r.json();
+          twitch = d.data?.[0]?.viewer_count ?? 0;
+        }
+      } catch(e) {}
+      return json({ twitch, facebook: 0 });
+    }
+
     // ──── 404 ────
     return error('Not found', 404);
   },
